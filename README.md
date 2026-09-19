@@ -31,25 +31,21 @@ under the hood, and why the Allure 3 parts work the way they do.
 
 ![Allure 3 report opened in browser](demo/images/allure_html_last_Step_Reports.jpeg)
 
-**Charts and timeline, in the same single file**
+**5. Charts come with it, in the same single file**
 
-<table>
-<tr><th>Graphs</th><th>Timeline</th></tr>
-<tr>
-<td><img src="demo/images/allure_html_last_Step_Graphs.jpeg" width="420"></td>
-<td><img src="demo/images/allure_html_last_Step_Timelines.jpeg" width="420"></td>
-</tr>
-</table>
+![Graphs](demo/images/allure_html_last_Step_Graphs.jpeg)
 
-**Down to the individual test case, with the identity fields that keep cross-suite and cross-browser runs distinct**
+**6. So does a timeline of the whole run**
 
-<table>
-<tr><th>A passing case: Suite and Browser parameters, labels, history</th><th>A failure: stack trace and the screenshot captured for you</th></tr>
-<tr>
-<td><img src="demo/images/allure_html_last_Step_PassedTestCase.jpeg" width="420"></td>
-<td><img src="demo/images/allure_html_last_Step_FailedTesCasewithScreenshot.jpeg" width="420"></td>
-</tr>
-</table>
+![Timeline](demo/images/allure_html_last_Step_Timelines.jpeg)
+
+**7. Every test case keeps its own identity - the Suite and Browser parameters are what stop cross-suite and cross-browser runs collapsing into one another**
+
+![A passing test case](demo/images/allure_html_last_Step_PassedTestCase.jpeg)
+
+**8. And a failure carries its stack trace and a screenshot, captured for you**
+
+![A failing test case with its screenshot](demo/images/allure_html_last_Step_FailedTesCasewithScreenshot.jpeg)
 
 ## Sponsors
 
