@@ -15,21 +15,21 @@ under the hood, and why the Allure 3 parts work the way they do.
 
 ## See It in Action
 
-**1. Install by double-clicking the installer for your OS**
+**1. Install with one command**
 
-<!-- demo/images/install_1st_Step.jpg -->
+![Install with npx](demo/images/install_npx_1st_Step.jpg)
 
 **2. Run your test suite or collection like you always do**
 
-<!-- demo/images/run_test_suite_or_collection_2nd_Step.jpg -->
+![Run a test suite](demo/images/run_test_suite_or_collection_2nd_Step.jpg)
 
 **3. The Allure 3 report is generated automatically, right inside Katalon Studio**
 
-<!-- demo/images/allure3_report_3rd_Step.jpg -->
+![Report generated in Katalon Studio](demo/images/allure_report_3rd_Step.jpg)
 
-**4. Open it and get the full picture, including charts, environments and trends**
+**4. Open it and get the full picture - suites, steps, charts, environments, everything**
 
-<!-- demo/images/allure3_html_last_Step.jpg -->
+![Allure 3 report opened in browser](demo/images/allure_html_last_Step.jpg)
 
 ## Sponsors
 
