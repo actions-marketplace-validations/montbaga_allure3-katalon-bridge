@@ -29,23 +29,33 @@ under the hood, and why the Allure 3 parts work the way they do.
 
 **4. Open it and get the full picture - suites, steps, charts, environments, everything**
 
-![Allure 3 report opened in browser](demo/images/allure_html_last_Step_Reports.jpeg)
+![Allure 3 report opened in browser](demo/images/laststep_reports_1.jpg)
 
-**5. Charts come with it, in the same single file**
+**Results group by environment, so one test case run from several suites and browsers stays several tests instead of collapsing into one**
 
-![Graphs](demo/images/allure_html_last_Step_Graphs.jpeg)
+![Results grouped by environment and suite](demo/images/laststep_reports_2nd.jpg)
 
-**6. So does a timeline of the whole run**
+**Charts come with the report, in that same single file**
 
-![Timeline](demo/images/allure_html_last_Step_Timelines.jpeg)
+![Current status, status dynamics, severities, status transitions](demo/images/laststep_graphs_1.jpg)
 
-**7. Every test case keeps its own identity - the Suite and Browser parameters are what stop cross-suite and cross-browser runs collapsing into one another**
+![Test base growth, coverage diff, success rate, problems by environment](demo/images/laststep_graphs_2.jpg)
 
-![A passing test case](demo/images/allure_html_last_Step_PassedTestCase.jpeg)
+![Stability by feature, epic and story, durations histogram](demo/images/laststep_graphs_3.jpg)
 
-**8. And a failure carries its stack trace and a screenshot, captured for you**
+![Durations by layer, duration dynamics, status age pyramid, testing pyramid](demo/images/laststep_graphs_4.jpg)
 
-![A failing test case with its screenshot](demo/images/allure_html_last_Step_FailedTesCasewithScreenshot.jpeg)
+**Each test case keeps its own steps, parameters and history**
+
+![A passing test case in detail](demo/images/PassedTesCaseDetailed.jpg)
+
+**A failure shows the step that broke, the stack trace, and a screenshot captured for you**
+
+![Failed test case, overview and parameters](demo/images/FailedTestCaseDetailed_1.jpg)
+
+![Failed test case, the failing step and its stack trace](demo/images/FailedTestCaseDetailed_2.jpg)
+
+![Failed test case, the screenshot captured on failure](demo/images/FailedTestCaseDetailed_3.jpg)
 
 ## Sponsors
 
