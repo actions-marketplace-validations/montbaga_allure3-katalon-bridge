@@ -1,0 +1,42 @@
+{
+  "name": "allure3-katalon-bridge",
+  "version": "0.1.0",
+  "description": "Zero-touch Allure 3 reporting for Katalon Studio projects - install with one command, no plugin, no OSGi packaging, no global Allure install.",
+  "keywords": [
+    "katalon",
+    "katalon-studio",
+    "allure",
+    "allure3",
+    "allure-report",
+    "testing",
+    "test-automation",
+    "ci"
+  ],
+  "homepage": "https://github.com/montbaga/allure3-katalon-bridge",
+  "bugs": "https://github.com/montbaga/allure3-katalon-bridge/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/montbaga/allure3-katalon-bridge.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Monty Bagati",
+  "bin": {
+    "allure3-katalon-bridge": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "payload",
+    "VERSION"
+  ],
+  "dependencies": {
+    "allure": "^3.17.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ]
+}

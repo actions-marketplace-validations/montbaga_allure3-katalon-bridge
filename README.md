@@ -1,0 +1,439 @@
+# Allure3-Katalon Bridge
+
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.md)
+[![Last commit](https://img.shields.io/github/last-commit/montbaga/allure3-katalon-bridge.svg)](https://github.com/montbaga/allure3-katalon-bridge/commits/main)
+[![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-red)](https://github.com/sponsors/montbaga)
+
+Turn any Katalon Studio project into an [Allure 3](https://allurereport.org/docs/v3/)
+reporting project by double-clicking one file. No plugin installation, no
+OSGi packaging, no changes to existing Test Cases or Test Suites, and no
+global Allure install, because the Allure 3 CLI ships pinned inside this
+package.
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for how this is actually built
+under the hood, and why the Allure 3 parts work the way they do.
+
+## See It in Action
+
+**1. Install by double-clicking the installer for your OS**
+
+<!-- demo/images/install_1st_Step.jpg -->
+
+**2. Run your test suite or collection like you always do**
+
+<!-- demo/images/run_test_suite_or_collection_2nd_Step.jpg -->
+
+**3. The Allure 3 report is generated automatically, right inside Katalon Studio**
+
+<!-- demo/images/allure3_report_3rd_Step.jpg -->
+
+**4. Open it and get the full picture, including charts, environments and trends**
+
+<!-- demo/images/allure3_html_last_Step.jpg -->
+
+## Sponsors
+
+<!-- Company logos go here as Priority Partner / Company sponsors join -->
+
+If your team relies on this in CI, consider
+[sponsoring the project](https://github.com/sponsors/montbaga) to support
+ongoing maintenance:
+
+| Tier | Price | Gets you |
+|---|---|---|
+| Coffee | $5/mo | Your name added to the Backers list below |
+| Backer | $15/mo | Everything above, plus priority attention on your issues |
+| Company | $100/mo | Your company's logo and site link here, near the top of the README |
+| Priority Partner | $199/mo | Everything above, plus direct email help wiring the bridge into your CI setup |
+
+## Backers
+
+<!-- Names go here as backers join -->
+
+Thanks to everyone supporting this project.
+
+## Install / Uninstall
+
+Open the folder matching your OS. It contains only what you need, nothing
+from the other platforms. Each section below is self-contained: the quick
+double-click way, and the scripted/CI way with the same flags.
+
+Needs **Node.js 18+** on every platform. That is not an extra hoop the way
+it would have been for Allure 2: Allure 3's CLI *is* a Node program, and it
+ships pinned inside this package, which is what removes the PATH hunting
+the old bridge needed. The first install unpacks it for you (a one-time
+`npm install` in this folder); after that the bridge is self-contained and
+the Katalon project never needs Node packages of its own.
+
+<details>
+<summary><b>🪟 Windows/</b></summary>
+
+**Just click:** double-click **`Windows\Install.bat`**, then pick your
+Katalon project folder in the dialog that opens. Uninstall the same way
+with **`Windows\Uninstall.bat`**.
+
+**Drag-and-drop:** drop your project folder onto `Install.bat` (or
+`Uninstall.bat`) to skip the dialog entirely.
+
+**Scripted / CI** (run from the repo root):
+```powershell
+.\Windows\install.ps1 -ProjectPath "C:\path\to\your\katalon\project"      # add -Force to also overwrite a customized allure3.properties/allurerc.mjs, -VendorCli to copy the CLI into the project
+.\Windows\uninstall.ps1 -ProjectPath "C:\path\to\your\katalon\project"    # add -RemoveConfig to also delete allure3.properties/categories.json/allurerc.mjs
+```
+</details>
+
+<details>
+<summary><b>🍎 macOS/</b></summary>
+
+**Just click:** double-click **`macOS/Install.command`**, then pick your
+Katalon project folder in the dialog that opens. Uninstall the same way
+with **`macOS/Uninstall.command`**.
+
+**Scripted / CI** (run from the repo root). macOS shares the Linux bash
+engine below, since bash itself is identical on both:
+```bash
+./Linux/install.sh /path/to/your/katalon/project      # add --force to also overwrite a customized allure3.properties/allurerc.mjs, --vendor-cli to copy the CLI into the project
+./Linux/uninstall.sh /path/to/your/katalon/project    # add --remove-config to also delete allure3.properties/categories.json/allurerc.mjs
+```
+</details>
+
+<details>
+<summary><b>🐧 Linux/</b></summary>
+
+Run from the repo root:
+```bash
+./Linux/install.sh /path/to/your/katalon/project      # add --force to also overwrite a customized allure3.properties/allurerc.mjs, --vendor-cli to copy the CLI into the project
+./Linux/uninstall.sh /path/to/your/katalon/project    # add --remove-config to also delete allure3.properties/categories.json/allurerc.mjs
+```
+Run either script with no path argument and it'll prompt you to paste one instead.
+</details>
+
+<details>
+<summary><b>📦 Node directly (any OS)</b></summary>
+
+The OS folders above are wrappers around one installer, `bin/cli.js`. Call
+it yourself if you'd rather not go through them:
+
+```
+node "<path-to-this-folder>/bin/cli.js" install   "/path/to/your/katalon/project"
+node "<path-to-this-folder>/bin/cli.js" uninstall "/path/to/your/katalon/project"
+```
+
+One-time setup first, so the bundled Allure 3 CLI is present (the OS
+wrappers do this step for you):
+
+```
+cd <path-to-this-folder> && npm install
+```
+</details>
+
+<details>
+<summary><b>Once this is published to npm</b></summary>
+
+This package is **not published to npm yet**, so there is no `npx` form
+today. When there is:
+
+```
+npx allure3-katalon-bridge install "/path/to/your/katalon/project"
+```
+
+Note that `npx` unpacks into a transient cache, so the path the installer
+records can be cleared by `npm cache clean` or npm's own cache eviction.
+Pass `--vendor-cli` when installing via `npx` to copy the CLI into the
+project instead, or install the package properly (`npm i -g`) rather than
+running it through `npx`.
+
+Also note that `npx <tarball> install <path>` silently does nothing; the
+working form is
+`npx --package <tarball> -- allure3-katalon-bridge install <path>`.
+</details>
+
+| Flag | PowerShell | Effect |
+|---|---|---|
+| `--force` | `-Force` | also overwrite a customized `allure3.properties` / `allurerc.mjs` |
+| `--vendor-cli` | `-VendorCli` | copy the Allure 3 CLI into the project, so it runs on a machine that never ran the installer |
+| `--remove-config` | `-RemoveConfig` | (uninstall) also delete `allure3.properties`, `categories.json`, `allurerc.mjs` |
+
+Uninstalling only removes what the install recorded in
+`<project>/.allure3-bridge/manifest.txt`, and keeps your config plus any
+generated `allure-results/`, `allure-report/` and `allure-history.jsonl`
+unless you pass the flag above.
+
+## Why this exists
+
+Katalon Studio has no first-party Allure adapter, and Allure 3 adds a
+problem of its own that a DIY setup will not see coming. This package
+solves both sets:
+
+| Problem | How this solves it |
+|---|---|
+| No hook to drive Allure's lifecycle from Katalon | Uses Katalon's public, documented Test Listener API (`@BeforeTestSuite`/`@BeforeTestCase`/`@AfterTestCase`/`@AfterTestSuite`) |
+| Allure's transitive Jackson clashes with Katalon's bundled Jackson | Ships only `allure-java-commons` + `allure-model`, whose Jackson is shaded/relocated internally, verified by inspecting the jar rather than assumed |
+| Allure 3 silently merges distinct runs and hides failures | Writes a `Suite` parameter, a `browser` label and a `Browser` parameter so each execution keeps its own identity. See the next section |
+| Allure 3's CLI is a Node program that a GUI-launched IDE cannot find on PATH | The CLI is pinned as this package's own dependency and its absolute path recorded at install time, so nothing is ever looked up on PATH |
+| Results land in a different folder depending on how the suite was launched | Results directory is resolved explicitly against the project root, not the process's working directory |
+| A reporting bug could fail or change the outcome of a real test | Every hook catches its own exceptions and only logs a warning |
+| Can't afford to touch thousands of existing test cases | Fully automatic at the suite/case level; step-level detail is opt-in |
+
+## Why Allure 3, and why this is not a drop-in swap
+
+Allure 3 reads Allure 2's results format natively, so it is tempting to
+just point `allure` 3.x at an existing Allure 2 bridge's output. Do not.
+It produces a **silently wrong report**.
+
+Allure 3 ignores the `historyId` a result declares and recomputes its
+own, grouping retries by `md5(testCaseId : parametersHash : environmentId)`
+and showing only the newest attempt in each group. Katalon reuses one
+test case across many suites under a single `testCaseId`, so those runs
+all collapse together.
+
+On a real six-result Katalon run containing one genuine failure:
+
+| | tests shown | reported status |
+|---|---|---|
+| Allure 2 bridge output, read by Allure 3 | 2 (4 hidden as retries) | **passed** |
+| This bridge | 6 | **failed** |
+
+The failing run was hidden behind a passing one. This bridge keeps each
+execution distinct in the report body *and* in history.
+[`ARCHITECTURE.md`](ARCHITECTURE.md#test-identity-the-part-that-matters-most)
+has the full mechanism.
+
+## Requirements
+
+- Katalon Studio (tested on 11.4.0; uses only long-stable public APIs)
+- Node.js 18 or newer. Allure 3's CLI is a Node program, so this is not optional. You do **not** need a global Allure install: the CLI is pinned inside this package and its exact path is recorded at install time
+- Windows or macOS to use the double-click installer as-is; Linux works via `Linux/install.sh` in a terminal (PowerShell and bash ship with the OS either way, so there is nothing extra to install for the installer itself)
+
+## What the installer actually does
+
+1. Verifies the target folder is a real Katalon project (looks for a `*.prj` file) before writing anything, and refuses to run otherwise.
+2. Unpacks the pinned Allure 3 CLI on first use, with a one-time `npm install` inside this package.
+3. Copies the Test Listener, Keywords, config, and Drivers jars into the project.
+4. Records which Allure 3 CLI and which node binary to run in `<project>/.allure3-bridge/cli.json`, so nothing is ever resolved from PATH at test time.
+5. Generates `allurerc.mjs` at the project root, with an Allure 3 environment matcher per browser.
+6. Leaves an existing, customized `allure3.properties` or `allurerc.mjs` alone (pass `-Force` / `--force` to overwrite them too).
+7. Records everything it installed in `<project>/.allure3-bridge/manifest.txt`, so uninstall can remove exactly that later and nothing else in the project is ever touched.
+8. Registers the two jars in `.classpath` if one exists, so Katalon's editor resolves the Allure classes without a manual refresh.
+
+Re-running install against the same project **upgrades** it in place.
+Uninstall removes exactly what's in the manifest; generated output and
+your config are kept by default.
+
+## What gets installed
+
+```
+Test Listeners/Allure3TestListener.groovy       auto-discovered by Katalon, the only wiring needed
+Keywords/allure3/Allure3ReportBridge.groovy     engine: status mapping, attachments, identity, report generation
+Keywords/allure3/Allure3Config.groovy           allure3.properties reader, with ALLURE3_* env var overrides
+Keywords/allure3/Allure3Keywords.groovy         optional: step(), attachText/Json/Html/File/Screenshot, epic/feature/story/severity/label/link/issue/tmsLink/parameter
+Include/config/allure3/allure3.properties       configuration (results dir, identity, screenshot policy)
+Include/config/allure3/categories.json          failure categorization tuned to Katalon/Selenium exception types
+Drivers/allure-java-commons-2.35.4.jar          Apache-2.0, Qameta Software, the only 2 extra jars needed
+Drivers/allure-model-2.35.4.jar
+Drivers/fetch-allure-jars.ps1                   re-download the 2 jars from Maven Central (sha1-verified) if your org won't commit binaries to git
+allurerc.mjs                                    Allure 3's own config, generated with a matcher per browser
+.allure3-bridge/cli.json                        which Allure 3 CLI and node binary to run
+.allure3-bridge/manifest.txt                    exactly what was installed, for a clean uninstall
+```
+
+There is no "View Allure Report" helper here, and none is needed. Every
+run produces one self-contained `.html` with all of its data embedded
+inline, so you double-click it like any other HTML file.
+
+## Using it
+
+**Zero-touch (default):** every test suite run automatically produces one
+Allure result per test case, with status, timing, a failure screenshot
+(WebUI only) and stack trace on failure, and suite/host/thread/framework
+labels. A self-contained `allure-report/<Name>_<timestamp>.html` is
+generated at the end of the run, with Trend and Retries carried forward
+from previous runs.
+
+`<Name>` is whatever you actually ran:
+
+- **A Test Suite Collection** running multiple Test Suites, named after
+  the collection, with all of its Test Suites combined into **one**
+  report rather than one per Test Suite. Katalon has no public API that
+  hands a collection's name to a Test Listener, so the bridge derives it
+  from the run's own report folder structure instead.
+- **A single Test Suite**, named after that suite.
+- **A lone Test Case** run directly with no saved suite involved, named
+  after that test case.
+
+Browsers become first-class Allure 3 **environments**, so the report has
+an environment switcher rather than a `(Chrome)` suffix glued onto a
+suite name. A suite that never opens a browser, such as an API-only test
+case, does not get one, since it never actually used one. If a Collection
+runs the same Test Suite more than once, each occurrence stays its own
+entry instead of being merged.
+
+History lives in `allure-history.jsonl`, outside the report. Because it
+is external, single-file reports carry Trend and Retries forward too,
+which the Allure 2 bridge could not do.
+
+**Opt-in step detail**, from inside a Test Case script or Cucumber glue:
+
+```groovy
+CustomKeywords.'allure3.Allure3Keywords.step'('Log in as admin', {
+    WebUI.setText(findTestObject('Page/input_Username'), 'admin')
+    WebUI.click(findTestObject('Page/button_Login'))
+})
+CustomKeywords.'allure3.Allure3Keywords.severity'('critical')
+CustomKeywords.'allure3.Allure3Keywords.epic'('Patient Management')
+CustomKeywords.'allure3.Allure3Keywords.attachJson'('Booking payload', responsePayload)
+```
+
+## Charts
+
+The report has a **Charts** section already, with no extra plugin and no
+second file. Allure 3's `awesome` report defaults its `sections` to
+`["charts", "timeline"]`, and the bridge leaves that alone.
+
+Some charts work off history alone and fill up as you accumulate runs.
+The rest need labels Katalon has no concept of, so they stay empty until
+test cases set them:
+
+```groovy
+import allure3.Allure3Keywords as Allure3
+
+Allure3.severity('critical')              // Test results by severities
+Allure3.epic('Checkout')                  // Stability distribution by epics
+Allure3.feature('Payment')                // ... by features
+Allure3.story('Pay with a saved card')    // ... by stories
+Allure3.label('layer', 'e2e')             // Testing pyramid
+```
+
+`layer` is the sharp edge. The testing pyramid has exactly three buckets,
+**`unit`, `integration` and `e2e`**, and silently ignores every other
+value, so a sensible-looking `ui` or `api` leaves all three bars at zero.
+Matching is case-insensitive. To chart your own layer names instead,
+override `layers` on that chart in `allurerc.mjs`.
+
+Status transitions deserves a note too: it plots tests whose status
+*changed* between runs. A test that fails identically every run
+contributes nothing to it.
+
+## Configuration
+
+Everything lives in `Include/config/allure3/allure3.properties`, and every
+key is overridable by an `ALLURE3_<KEY_IN_UPPER_SNAKE_CASE>` environment
+variable so CI can redirect output without editing a checked-in file.
+
+| Key | Default | What it does |
+|---|---|---|
+| `allure3.enabled` | `true` | master switch |
+| `allure3.results.dir` | `allure-results` | where raw results are written |
+| `allure3.report.dir` | `allure-report` | where reports are written |
+| `allure3.report.single.file` | `true` | one self-contained `.html` per run |
+| `allure3.history.file` | `allure-history.jsonl` | Trend/Retries accumulation |
+| `allure3.config.file` | `allurerc.mjs` | Allure 3's own config |
+| `allure3.separate.suites.as.parameters` | `true` | keeps cross-suite runs distinct |
+| `allure3.separate.browsers.as.parameters` | `true` | keeps per-browser history distinct |
+| `allure3.capture.steps` | `true` | Katalon log lines become nested Allure steps |
+| `allure3.attach.screenshot.on.failure` | `true` | screenshot when a test does not pass |
+| `allure3.generate.timeout.seconds` | `120` | give up after this long |
+
+The two identity keys are documented at length in the properties file
+itself. Read that before turning either off, because both exist to stop
+Allure 3 hiding a failing run behind a passing one.
+
+`allurerc.mjs` at the project root holds what the properties file cannot
+express: environments, categories, quality gates, variables. The
+installer generates it with a matcher per browser and leaves it alone
+afterwards unless you pass `--force`.
+
+### Failing the build on regressions
+
+Uncomment the `qualityGate` block the installer leaves in `allurerc.mjs`:
+
+```js
+qualityGate: {
+  rules: [{ maxFailures: 0, fastFail: false }],
+},
+```
+
+Then run `allure quality-gate` as a CI step; it exits non-zero when a rule
+is breached. This has no Allure 2 equivalent.
+
+## What you gain over the Allure 2 bridge
+
+- **Trends in single-file reports.** Allure 2 embedded history inside the
+  report folder, so single-file mode could never carry it forward. Allure
+  3 keeps history in an external JSONL file, so it works in both modes.
+- **No PATH hunting.** The CLI is pinned and its exact path recorded at
+  install time. The failure mode where a GUI-launched Katalon Studio
+  could not see a volta/nvm/homebrew `allure` is gone.
+- **Environments.** Browsers map to first-class Allure 3 environments
+  rather than a `(Chrome)` suffix glued onto the suite name.
+- **Faster.** The same six-result run generates in about 140ms.
+- **Charts.** Status dynamics and transitions, test base growth, duration
+  histograms, stability distributions, testing pyramid.
+- **Quality gates**, known issues, `allure watch` for live reports, and
+  the csv/dashboard/log/slack/testplan plugins, all through `allurerc.mjs`.
+
+## Migrating from allure-katalon-bridge
+
+Nothing collides: the Groovy package is `allure3`, keywords live in
+`Keywords/allure3/`, the listener is `Allure3TestListener`, config is in
+`Include/config/allure3/`, and state files are `.allure3-*`. Both bridges
+can sit in one project while you switch over.
+
+Do not leave both *enabled*, though. Two listeners writing every test
+case into the same results directory produces duplicates. Remove one
+listener, or set `allure.enabled=false` on the old one.
+
+Existing Allure 2 trend history does not carry over. Allure 3's history
+format and its recomputed identifiers are both different, so the new
+report starts its trend fresh.
+
+## Troubleshooting
+
+**Install fails with "Node.js was not found on PATH".** Allure 3's CLI is
+a Node program, so the bridge needs Node 18 or newer. Install it from
+[nodejs.org](https://nodejs.org/) and run the installer again. Unlike the
+Allure 2 bridge, there is no fallback here: there is no Java `allure`
+launcher to find.
+
+**No `[Allure3]` lines in the console after a run.** The listener was not
+picked up. Refresh the project in Katalon Studio so it compiles the newly
+installed `Test Listeners/` and `Keywords/allure3/` files, then run
+again. Check `allure3.enabled` is not set to `false`.
+
+**A `[Allure3] Could not auto-generate the HTML report` warning.** The
+recorded Allure 3 CLI could not be run. This usually means the project was
+committed to git and checked out on another machine, so the absolute path
+in `.allure3-bridge/cli.json` no longer exists there. Re-run the
+installer on that machine, or install with `--vendor-cli` so the CLI
+travels inside the project, or point `allure3.cli.path` at one directly.
+
+**The report shows fewer tests than you ran, and says passed when
+something failed.** That is Allure 3 collapsing distinct runs into
+retries. Check that `allure3.separate.suites.as.parameters` and
+`allure3.separate.browsers.as.parameters` are both still `true`. See
+"Why Allure 3, and why this is not a drop-in swap" above.
+
+**Charts are empty.** Most of them need labels Katalon does not write on
+its own. See [Charts](#charts) above, and note that the testing pyramid
+only recognises the layer values `unit`, `integration` and `e2e`.
+
+**Test Suite Collection report seems to be missing one member suite's
+results.** Every suite in a Collection shares one `allure-results/`
+folder, and the report is only generated once every member has finished.
+If a member suite never reaches its own `AfterTestSuite` because it was
+aborted, killed, or crashed mid-run, its results will not be in the folder
+when the report is built. Check the console for `[Allure3]` lines from
+every expected suite.
+
+For anything else, open an issue on this repo, or reach out. See Support
+below.
+
+## Support
+
+Questions, bug reports, or need help wiring this into a specific CI/CD
+setup? Open an issue on this repo, or reach out directly for consulting:
+**bagati.monty@gmail.com**.
+
+## License
+
+Apache-2.0. See [`LICENSE.md`](LICENSE.md).
