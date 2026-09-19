@@ -26,6 +26,10 @@
   "files": [
     "bin",
     "payload",
+    "Windows",
+    "macOS",
+    "Linux",
+    "ARCHITECTURE.md",
     "VERSION"
   ],
   "dependencies": {
