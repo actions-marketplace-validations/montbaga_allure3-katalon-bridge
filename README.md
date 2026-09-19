@@ -18,7 +18,7 @@ under the hood, and why the Allure 3 parts work the way they do.
 
 **1. Install with one command**
 
-![Install with npx](demo/images/install_npx_1st_Step.jpg)
+![Install with npx](demo/images/npx_1st_step.jpg)
 
 **2. Run your test suite or collection like you always do**
 
