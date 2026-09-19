@@ -242,9 +242,25 @@ function writeAllurercConfig(projectPath, force) {
         return false;
     }
 
-    const browsers = ['Chrome', 'Firefox', 'Edge Chromium', 'Safari', 'IE', 'Remote'];
+    // Exactly the display names Katalon's WebUIDriverType reports, which
+    // is what the bridge writes as the "browser" label. The headless pair
+    // matters for CI: a hosted Linux agent has no display, so suites there
+    // run "Chrome (headless)", and without an entry for it those runs fall
+    // outside every environment.
+    const browsers = [
+        'Chrome',
+        'Chrome (headless)',
+        'Firefox',
+        'Firefox (headless)',
+        'Edge',
+        'Edge Chromium',
+        'Safari',
+        'Remote',
+        'Remote Chrome',
+        'Remote Firefox',
+    ];
     const envEntries = browsers.map((browser) => {
-        const id = browser.replace(/[^A-Za-z0-9_-]/g, '_');
+        const id = browser.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
         return `    ${id}: byBrowser(${JSON.stringify(browser)}),`;
     }).join('\n');
 
