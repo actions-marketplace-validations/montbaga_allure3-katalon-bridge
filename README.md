@@ -1,6 +1,7 @@
 # Allure3-Katalon Bridge
 
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE.md)
+[![npm version](https://img.shields.io/npm/v/allure3-katalon-bridge.svg)](https://www.npmjs.com/package/allure3-katalon-bridge)
+[![License: Apache-2.0](https://img.shields.io/npm/l/allure3-katalon-bridge.svg)](LICENSE.md)
 [![Last commit](https://img.shields.io/github/last-commit/montbaga/allure3-katalon-bridge.svg)](https://github.com/montbaga/allure3-katalon-bridge/commits/main)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-red)](https://github.com/sponsors/montbaga)
 
@@ -80,16 +81,44 @@ Thanks to everyone supporting this project.
 
 ## Install / Uninstall
 
-Open the folder matching your OS. It contains only what you need, nothing
-from the other platforms. Each section below is self-contained: the quick
-double-click way, and the scripted/CI way with the same flags.
+One command that works the same everywhere is below under npm. Prefer to
+click something? Open the folder matching your OS: it contains only what
+you need, nothing from the other platforms. Each section is
+self-contained, covering the quick double-click way and the scripted/CI
+way with the same flags.
 
 Needs **Node.js 18+** on every platform. That is not an extra hoop the way
 it would have been for Allure 2: Allure 3's CLI *is* a Node program, and it
 ships pinned inside this package, which is what removes the PATH hunting
-the old bridge needed. The first install unpacks it for you (a one-time
-`npm install` in this folder); after that the bridge is self-contained and
+the old bridge needed. Installing the package brings the CLI with it, so
 the Katalon project never needs Node packages of its own.
+
+<details>
+<summary><b>📦 npm (any OS)</b></summary>
+
+Works identically on Windows, macOS and Linux. Useful for CI, or if you'd
+rather not pick an OS-specific script.
+
+```
+npx allure3-katalon-bridge install "/path/to/your/katalon/project"      # add --force to also overwrite a customized allure3.properties/allurerc.mjs
+npx allure3-katalon-bridge uninstall "/path/to/your/katalon/project"    # add --remove-config to also delete allure3.properties/categories.json/allurerc.mjs
+```
+
+`npx` fetches and runs it without installing anything globally. To install
+it once and reuse it: `npm install -g allure3-katalon-bridge`, then run
+`allure3-katalon-bridge install ...` directly.
+
+One caveat specific to `npx`: it unpacks into a transient cache, and the
+installer records the path of the Allure 3 CLI it found there. `npm cache
+clean`, or npm's own cache eviction, can remove it and leave the project
+pointing at a CLI that is gone. Pass `--vendor-cli` to copy the CLI into
+the project instead, or install the package properly with `npm i -g`
+rather than running it through `npx`.
+
+Also note that `npx <tarball> install <path>` silently does nothing; the
+working form for a local tarball is
+`npx --package <tarball> -- allure3-katalon-bridge install <path>`.
+</details>
 
 <details>
 <summary><b>🪟 Windows/</b></summary>
@@ -135,10 +164,10 @@ Run either script with no path argument and it'll prompt you to paste one instea
 </details>
 
 <details>
-<summary><b>📦 Node directly (any OS)</b></summary>
+<summary><b>🧑‍💻 From a clone (any OS)</b></summary>
 
 The OS folders above are wrappers around one installer, `bin/cli.js`. Call
-it yourself if you'd rather not go through them:
+it yourself if you are working from a clone rather than the npm package:
 
 ```
 node "<path-to-this-folder>/bin/cli.js" install   "/path/to/your/katalon/project"
@@ -153,26 +182,6 @@ cd <path-to-this-folder> && npm install
 ```
 </details>
 
-<details>
-<summary><b>Once this is published to npm</b></summary>
-
-This package is **not published to npm yet**, so there is no `npx` form
-today. When there is:
-
-```
-npx allure3-katalon-bridge install "/path/to/your/katalon/project"
-```
-
-Note that `npx` unpacks into a transient cache, so the path the installer
-records can be cleared by `npm cache clean` or npm's own cache eviction.
-Pass `--vendor-cli` when installing via `npx` to copy the CLI into the
-project instead, or install the package properly (`npm i -g`) rather than
-running it through `npx`.
-
-Also note that `npx <tarball> install <path>` silently does nothing; the
-working form is
-`npx --package <tarball> -- allure3-katalon-bridge install <path>`.
-</details>
 
 | Flag | PowerShell | Effect |
 |---|---|---|
