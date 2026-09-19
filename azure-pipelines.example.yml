@@ -1,0 +1,153 @@
+# Example Azure Pipelines config for a Katalon Studio project using the
+# Allure3-Katalon Bridge. Copy this into your project's repo as
+# azure-pipelines.yml, fill in the TODOs, and it's ready to run.
+#
+# Uses the "Execute Katalon Studio Tests" Marketplace task (katalonTask),
+# which handles downloading and running the correct Katalon Runtime Engine
+# version for you. Install it from the Azure DevOps Marketplace first if
+# your organization doesn't already have it.
+#
+# Nothing here installs Allure. Allure 3's CLI ships pinned inside
+# allure3-katalon-bridge, so unlike the Allure 2 bridge there is no
+# "npm install -g allure-commandline" step and no PATH to get right. Node
+# is the only prerequisite, because that CLI is a Node program.
+#
+# The bridge needs no configuration either: executor.json auto-detects
+# Azure Pipelines from the standard SYSTEM_TEAMFOUNDATIONCOLLECTIONURI and
+# BUILD_BUILDID variables ADO sets automatically, so the report header
+# links back to this exact build.
+
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  # Create a variable group named "Katalon" under Pipelines > Library, with
+  # a secret variable named KatalonApiKey holding your Katalon Runtime
+  # Engine API key (Katalon Store > Profile > API Key). Marking it secret
+  # keeps it masked in every log line.
+  - group: Katalon
+
+strategy:
+  matrix:
+    # Trim this to the one image you care about if you don't need all
+    # three. browserType is per-OS because Edge ships on the Windows image
+    # and Chrome on the other two.
+    windows:
+      vmImage: 'windows-latest'
+      browserType: 'Edge Chromium'
+      reportSeparator: '\'
+    macOS:
+      vmImage: 'macOS-latest'
+      browserType: 'Chrome'
+      reportSeparator: '/'
+    linux:
+      vmImage: 'ubuntu-latest'
+      browserType: 'Chrome'
+      reportSeparator: '/'
+
+pool:
+  vmImage: $(vmImage)
+
+steps:
+  - checkout: self
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '18.x'
+    displayName: 'Install Node.js'
+
+  # Allure 3 keeps history in one JSONL file outside the report, so
+  # restoring it before the run is what gives a CI report a Trend and a
+  # Retries view instead of starting blank every time. The Allure 2 bridge
+  # could not do this at all in single-file mode.
+  - task: Cache@2
+    displayName: 'Restore Allure history'
+    inputs:
+      key: 'allure-history | "$(Agent.OS)"'
+      path: '$(Build.SourcesDirectory)/allure-history.jsonl'
+      cacheHitVar: ALLURE_HISTORY_RESTORED
+
+  # Installs/upgrades the bridge into this job's own checkout before the
+  # Katalon step runs, so this pipeline produces real Allure reports even
+  # if you never ran the installer locally. Nothing here is committed back
+  # to your repo, so a local Katalon Studio run still won't have Allure
+  # reporting until you also run the installer locally once and commit the
+  # result. This step only keeps CI itself current.
+  - script: npx allure3-katalon-bridge install "$(Build.SourcesDirectory)"
+    displayName: 'Keep Allure3-Katalon Bridge up to date'
+
+  - task: PowerShell@2
+    displayName: 'Clean bin/ before Katalon run'
+    inputs:
+      targetType: 'inline'
+      pwsh: true
+      script: |
+        # katalonTask resolves the project by scanning for a *.prj file, and
+        # will pick up a stray copy left under bin/ by an earlier step in
+        # this same job if one exists, running against the wrong project
+        # entirely. Clearing bin/ before every katalonTask step avoids that.
+        # Repeat this step before each one if your pipeline runs more than
+        # one Test Suite or Test Suite Collection.
+        Remove-Item -LiteralPath "$(Build.SourcesDirectory)/bin" -Recurse -Force -ErrorAction SilentlyContinue
+
+  - task: katalonTask@1
+    displayName: 'Run Katalon tests'
+    condition: succeededOrFailed()
+    inputs:
+      version: '11.3.0'
+      # TODO: replace <YourCollection> with your actual Test Suite
+      # Collection path, or swap -testSuiteCollectionPath for
+      # -testSuitePath="Test Suites/<YourSuite>" to run a single suite.
+      #
+      # --config -webui.autoUpdateDrivers=true keeps the WebUI driver in
+      # sync with whatever browser version is actually on the agent,
+      # instead of Katalon's bundled driver, which can lag behind a hosted
+      # agent's auto-updating browser and fail with
+      # SessionNotCreatedException.
+      executeArgs: '-retry=0 -testSuiteCollectionPath="Test Suites/<YourCollection>" -executionProfile="default" -browserType="$(browserType)" -apiKey=$(KatalonApiKey) --config -webui.autoUpdateDrivers=true -reportFolder="$(Build.SourcesDirectory)$(reportSeparator)Reports"'
+
+  - task: PublishTestResults@2
+    displayName: 'Publish test results'
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'Reports/**/*.xml'
+      searchFolder: '$(Build.SourcesDirectory)'
+      mergeTestResults: true
+      failTaskOnFailedTests: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Katalon report folder'
+    condition: succeededOrFailed()
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/Reports'
+      ArtifactName: 'katalon-reports-$(Agent.OS)'
+
+  # One self-contained .html per run, so downloading this artifact and
+  # double-clicking the file is the whole workflow. No server, no
+  # "allure open", nothing to unpack first.
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Allure report'
+    condition: succeededOrFailed()
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/allure-report'
+      ArtifactName: 'allure-report-$(Agent.OS)'
+
+  # Optional, and new in Allure 3. Uncomment the qualityGate block in the
+  # project's allurerc.mjs first; this then exits non-zero when a rule is
+  # breached, failing the build on a regression rather than only reporting
+  # it. It reuses the exact CLI the installer already recorded, so there is
+  # nothing extra to download here either.
+  #
+  # - task: Bash@3
+  #   displayName: 'Allure quality gate'
+  #   condition: succeededOrFailed()
+  #   inputs:
+  #     targetType: 'inline'
+  #     workingDirectory: '$(Build.SourcesDirectory)'
+  #     script: |
+  #       NODE=$(node -p "require('./.allure3-bridge/cli.json').node")
+  #       CLI=$(node -p "require('./.allure3-bridge/cli.json').cli")
+  #       "$NODE" "$CLI" quality-gate ./allure-results -c allurerc.mjs

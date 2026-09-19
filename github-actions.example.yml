@@ -1,0 +1,129 @@
+# Example GitHub Actions workflow for a Katalon Studio project using the
+# Allure3-Katalon Bridge. Copy this into your project's repo as
+# .github/workflows/katalon-ci.yml, fill in the TODO, and it's ready to run.
+#
+# Uses the official katalon-studio/katalon-studio-github-action, which
+# downloads and runs the requested Katalon Runtime Engine version for you.
+#
+# Nothing here installs Allure. Allure 3's CLI ships pinned inside
+# allure3-katalon-bridge, so unlike the Allure 2 bridge there is no
+# "npm install -g allure-commandline" step and no PATH to get right. Node
+# is the only prerequisite, because that CLI is a Node program.
+#
+# The bridge needs no configuration either: executor.json auto-detects
+# GitHub Actions from the standard GITHUB_ACTIONS / GITHUB_RUN_ID variables,
+# so the report header links back to this exact run.
+#
+# The bridge install step is optional. The bridge only needs installing
+# once locally, with the resulting files committed like any other project
+# file. Keeping it here just holds every checkout in sync automatically:
+# it is idempotent, upgrades in place, and no-ops when already current.
+
+name: Katalon CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Trim this list to the one OS you care about if you don't need
+          # all three. browser is per-OS because Edge ships on the Windows
+          # runner and Chrome on the other two.
+          - os: windows-latest
+            browser: Edge Chromium
+          - os: macos-latest
+            browser: Chrome
+          - os: ubuntu-latest
+            browser: Chrome
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }} (${{ matrix.browser }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Allure 3 keeps history in one JSONL file outside the report, so
+      # restoring it before the run is what gives a CI report a Trend and a
+      # Retries view instead of starting blank every time. The Allure 2
+      # bridge could not do this at all in single-file mode.
+      - name: Restore Allure history
+        uses: actions/cache/restore@v4
+        with:
+          path: allure-history.jsonl
+          key: allure-history-${{ matrix.os }}-${{ github.run_id }}
+          restore-keys: |
+            allure-history-${{ matrix.os }}-
+
+      - name: Keep Allure3-Katalon Bridge up to date
+        uses: montbaga/allure3-katalon-bridge@v1
+        with:
+          project-path: '${{ github.workspace }}'
+
+      - name: Run Katalon tests
+        uses: katalon-studio/katalon-studio-github-action@v4.0
+        with:
+          version: '11.3.0'
+          projectPath: '${{ github.workspace }}'
+          # TODO: replace <YourCollection> with your actual Test Suite
+          # Collection path, or swap -testSuiteCollectionPath for
+          # -testSuitePath="Test Suites/<YourSuite>" to run a single suite.
+          #
+          # --config -webui.autoUpdateDrivers=true keeps the WebUI driver in
+          # sync with whatever browser version is actually on the runner,
+          # instead of Katalon's bundled driver, which can lag behind and
+          # fail with SessionNotCreatedException.
+          #
+          # Add KATALON_API_KEY under Settings > Secrets and variables >
+          # Actions in your repo: your Katalon Runtime Engine API key from
+          # Katalon Store > Profile > API Key.
+          args: '-noSplash -retry=0 -testSuiteCollectionPath="Test Suites/<YourCollection>" -executionProfile="default" -browserType="${{ matrix.browser }}" -apiKey=${{ secrets.KATALON_API_KEY }} --config -webui.autoUpdateDrivers=true -reportFolder="${{ github.workspace }}/Reports"'
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: allure-history.jsonl
+          key: allure-history-${{ matrix.os }}-${{ github.run_id }}
+
+      - name: Publish Katalon report folder
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: katalon-reports-${{ matrix.os }}
+          path: Reports
+
+      # One self-contained .html per run, so downloading this artifact and
+      # double-clicking the file is the whole workflow. No server, no
+      # "allure open", nothing to unpack first.
+      - name: Publish Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ matrix.os }}
+          path: allure-report
+
+      # Optional, and new in Allure 3. Uncomment the qualityGate block in
+      # the project's allurerc.mjs first; this then exits non-zero when a
+      # rule is breached, failing the build on a regression rather than
+      # only reporting it.
+      #
+      # It reuses the exact CLI the installer already recorded, so there is
+      # nothing extra to download here either.
+      #
+      # - name: Allure quality gate
+      #   if: always()
+      #   shell: bash
+      #   run: |
+      #     NODE=$(node -p "require('./.allure3-bridge/cli.json').node")
+      #     CLI=$(node -p "require('./.allure3-bridge/cli.json').cli")
+      #     "$NODE" "$CLI" quality-gate ./allure-results -c allurerc.mjs

@@ -1,6 +1,7 @@
 # Allure3-Katalon Bridge
 
 [![npm version](https://img.shields.io/npm/v/allure3-katalon-bridge.svg)](https://www.npmjs.com/package/allure3-katalon-bridge)
+[![CI](https://img.shields.io/github/actions/workflow/status/montbaga/allure3-katalon-bridge/ci.yml?branch=main&label=CI)](https://github.com/montbaga/allure3-katalon-bridge/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/npm/l/allure3-katalon-bridge.svg)](LICENSE.md)
 [![Last commit](https://img.shields.io/github/last-commit/montbaga/allure3-katalon-bridge.svg)](https://github.com/montbaga/allure3-katalon-bridge/commits/main)
 [![Sponsor](https://img.shields.io/badge/sponsor-%E2%9D%A4-red)](https://github.com/sponsors/montbaga)
@@ -422,6 +423,115 @@ listener, or set `allure.enabled=false` on the old one.
 Existing Allure 2 trend history does not carry over. Allure 3's history
 format and its recomputed identifiers are both different, so the new
 report starts its trend fresh.
+
+## CI setup
+
+`executor.json` auto-detects Jenkins, Azure Pipelines, GitHub Actions and
+GitLab CI from each platform's own standard environment variables, so the
+report header links back to the build that produced it with nothing to
+configure. The self-contained HTML report is already on disk by the time
+your Katalon step finishes.
+
+The big difference from the Allure 2 bridge is what is **not** here: no
+step installs Allure. Allure 3's CLI ships pinned inside this package and
+its exact path is recorded at install time, so there is no
+`npm install -g allure-commandline`, no release tarball to unpack, and no
+PATH to get right on any of the three platforms. Node 18+ is the only
+prerequisite, because that CLI is a Node program.
+
+This repo includes three ready-to-copy configs,
+[`azure-pipelines.example.yml`](azure-pipelines.example.yml),
+[`github-actions.example.yml`](github-actions.example.yml) and
+[`gitlab-ci.example.yml`](gitlab-ci.example.yml). Pick the one matching
+your platform, copy it in under the filename your CI expects, fill in the
+one TODO (your Test Suite or Test Suite Collection path), and add your
+Katalon API key as described below.
+
+### Azure Pipelines
+
+1. Copy `azure-pipelines.example.yml` into your repo as `azure-pipelines.yml`.
+2. Install the **"Execute Katalon Studio Tests"** extension from the Azure
+   DevOps Marketplace if your organization doesn't already have it
+   (Organization Settings, Extensions, Browse Marketplace, search
+   "Katalon").
+3. Under **Pipelines, Library**, create a variable group named `Katalon`
+   with a secret variable `KatalonApiKey` holding your Katalon Runtime
+   Engine API key (Katalon Store, Profile, API Key). Marking it secret
+   keeps it masked in every log line.
+4. Replace `<YourCollection>` in the `executeArgs` line with your actual
+   Test Suite Collection path, or swap `-testSuiteCollectionPath` for
+   `-testSuitePath="Test Suites/<YourSuite>"` to run a single suite.
+5. Commit and push. The pipeline runs on every push to `main`.
+
+Reports show up on the pipeline run's **Summary** tab, in the artifacts
+panel near the top, as `katalon-reports-<OS>` and `allure-report-<OS>`.
+
+### GitHub Actions
+
+1. Copy `github-actions.example.yml` into your repo as
+   `.github/workflows/katalon-ci.yml`.
+2. Under **Settings, Secrets and variables, Actions**, add a repository
+   secret named `KATALON_API_KEY` with your Katalon Runtime Engine API key.
+3. Replace `<YourCollection>` in the `args` line the same way as above.
+4. Commit and push.
+
+Reports show up on the **Actions** tab, under that run's summary page, in
+the **Artifacts** section at the bottom.
+
+The example config already includes the bridge itself as a GitHub Action,
+so CI always runs against the current version without a raw npx command:
+
+```yaml
+- uses: montbaga/allure3-katalon-bridge@v1
+  with:
+    project-path: '${{ github.workspace }}'
+```
+
+### GitLab CI
+
+1. Copy `gitlab-ci.example.yml` into your repo as `.gitlab-ci.yml`.
+2. Under **Settings, CI/CD, Variables**, add a variable named
+   `KATALON_API_KEY` with your Katalon Runtime Engine API key, and check
+   "Mask variable".
+3. Replace `<YourCollection>` in the `script` line the same way as above.
+4. Commit and push.
+
+The Linux job uses Katalon's own official Docker image
+(`katalonstudio/katalon`), which ships Chrome and Firefox but not Edge, so
+it runs on **Chrome, not Edge**. Adjust `-browserType` and any
+browser-specific test logic accordingly. Windows and macOS jobs using
+GitLab's hosted SaaS runners are included commented out, since they depend
+on what your plan has enabled.
+
+Reports show up on the pipeline job's page, in the **Job artifacts** panel.
+
+### Worth knowing regardless of platform
+
+- **Trend and Retries need the history file to survive between runs.**
+  Allure 3 keeps history in `allure-history.jsonl`, outside the report, so
+  every example above caches and restores it. Without that a CI report is
+  technically correct but starts blank every time. This is the part the
+  Allure 2 bridge could not do at all in single-file mode.
+- **All three configs keep the bridge itself up to date in CI**, either
+  via the GitHub Action or a plain `npx allure3-katalon-bridge install`
+  step, so a pipeline produces real Allure reports even if nobody ran the
+  installer locally first. It does **not** commit anything back to your
+  repo, so a local Katalon Studio run still needs the installer run and
+  committed once. This only keeps CI's own checkout current.
+- **`--config -webui.autoUpdateDrivers=true`** is in all three examples. A
+  hosted CI agent's browser updates itself, and Katalon's bundled WebUI
+  driver can fall behind it, so without this a WebUI suite starts failing
+  with `SessionNotCreatedException` purely because the agent's browser
+  moved on. The `--config` prefix is required; the flag on its own is
+  rejected by Katalon's console-mode argument parser.
+- **Quality gates** are commented out in every example. Uncomment the
+  `qualityGate` block in `allurerc.mjs` and the matching CI step, and the
+  build fails on a regression instead of only reporting it. This has no
+  Allure 2 equivalent.
+- **Running more than one Katalon step in the same Azure Pipelines job?**
+  Add the `bin/`-clearing step before *each* one. `katalonTask` locates the
+  project by scanning for a `*.prj` file, and will find a stray copy left
+  in `bin/` by an earlier step before it finds the real one.
 
 ## Troubleshooting
 

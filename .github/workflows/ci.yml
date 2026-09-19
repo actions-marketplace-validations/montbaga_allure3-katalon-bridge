@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  install:
+    name: install on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # A folder containing a *.prj file is the whole definition of a
+      # Katalon project as far as the installer is concerned, so this is
+      # enough to exercise install and uninstall for real without a
+      # Katalon Runtime Engine licence.
+      #
+      # The name deliberately contains a space and square brackets: on
+      # Windows, PowerShell reads [v2] as a wildcard character class, which
+      # is exactly the kind of path that used to make the installers claim
+      # a real project was not one.
+      - name: Create a project to install into
+        shell: bash
+        run: |
+          mkdir -p "fixture/My Project [v2]"
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<Project><name>fixture</name><type>WEBUI</type></Project>\n' > "fixture/My Project [v2]/fixture.prj"
+
+      - name: Install via the Node entry point
+        shell: bash
+        run: node bin/cli.js install "fixture/My Project [v2]"
+
+      - name: Verify the payload landed
+        shell: bash
+        run: |
+          cd "fixture/My Project [v2]"
+          test -f "Test Listeners/Allure3TestListener.groovy"
+          test -f "Keywords/allure3/Allure3ReportBridge.groovy"
+          test -f "Keywords/allure3/Allure3Config.groovy"
+          test -f "Keywords/allure3/Allure3Keywords.groovy"
+          test -f "Include/config/allure3/allure3.properties"
+          test -f "Include/config/allure3/categories.json"
+          test -f "Drivers/allure-java-commons-2.35.4.jar"
+          test -f "Drivers/allure-model-2.35.4.jar"
+          test -f "allurerc.mjs"
+          test -f ".allure3-bridge/manifest.txt"
+          test -f ".allure3-bridge/cli.json"
+          echo "All expected files present."
+
+      # The recorded CLI is what the Groovy side runs instead of searching
+      # PATH, so a report can only be generated if this resolves and runs.
+      - name: Verify the recorded Allure 3 CLI actually runs
+        shell: bash
+        run: |
+          cd "fixture/My Project [v2]"
+          NODE=$(node -p "require('./.allure3-bridge/cli.json').node")
+          CLI=$(node -p "require('./.allure3-bridge/cli.json').cli")
+          test -f "$CLI"
+          "$NODE" "$CLI" --version
+
+      - name: Re-install is idempotent
+        shell: bash
+        run: |
+          node bin/cli.js install "fixture/My Project [v2]"
+          cd "fixture/My Project [v2]"
+          test "$(grep -c 'Allure3ReportBridge' .allure3-bridge/manifest.txt)" = "1"
+          echo "Manifest still lists each payload file once."
+
+      - name: Uninstall removes what it installed
+        shell: bash
+        run: |
+          node bin/cli.js uninstall "fixture/My Project [v2]" --remove-config
+          cd "fixture/My Project [v2]"
+          test ! -e "Test Listeners/Allure3TestListener.groovy"
+          test ! -e "Keywords/allure3"
+          test ! -e "Drivers/allure-java-commons-2.35.4.jar"
+          test ! -e ".allure3-bridge"
+          test -f "fixture.prj"
+          echo "Project is back to just its own files."
+
+  action:
+    name: composite action on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Create a project to install into
+        shell: bash
+        run: |
+          mkdir -p fixture-action
+          printf '<?xml version="1.0" encoding="UTF-8"?>\n<Project><name>fixture</name></Project>\n' > fixture-action/fixture.prj
+
+      # Exercises the published package the way a user's workflow would,
+      # rather than the local checkout.
+      - name: Run the action against it
+        uses: ./
+        with:
+          project-path: fixture-action
+
+      - name: Verify the payload landed
+        shell: bash
+        run: |
+          test -f "fixture-action/Test Listeners/Allure3TestListener.groovy"
+          test -f "fixture-action/Include/config/allure3/allure3.properties"
+          test -f "fixture-action/allurerc.mjs"
+          echo "All expected files present."

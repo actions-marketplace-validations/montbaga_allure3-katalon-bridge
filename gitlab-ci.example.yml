@@ -1,0 +1,122 @@
+# Example GitLab CI config for a Katalon Studio project using the
+# Allure3-Katalon Bridge. Copy this into your project's repo as
+# .gitlab-ci.yml, fill in the TODO, and it's ready to run.
+#
+# The Linux job uses Katalon's own official Docker image
+# (katalonstudio/katalon), which ships Chrome and Firefox but not Edge, so
+# use -browserType="Chrome" there rather than "Edge Chromium".
+#
+# Nothing here installs Allure. Allure 3's CLI ships pinned inside
+# allure3-katalon-bridge, so the Allure 2 example's step that downloaded
+# and unpacked an allure2 release tarball is gone entirely. Node is still
+# fetched below, because that CLI is a Node program and the Katalon image
+# is not confirmed to include one.
+#
+# The bridge needs no configuration either: executor.json auto-detects
+# GitLab CI from the standard GITLAB_CI / CI_PIPELINE_IID variables, so the
+# report header links back to this exact pipeline.
+
+image: katalonstudio/katalon:11.3.0
+
+stages:
+  - test
+
+variables:
+  NODE_VERSION: "18.20.4"
+
+.katalon_linux:
+  stage: test
+  before_script:
+    - curl -sL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz" -o /tmp/node.tar.gz
+    - tar xf /tmp/node.tar.gz -C /opt
+    - export PATH="/opt/node-v${NODE_VERSION}-linux-x64/bin:$PATH"
+    - npx allure3-katalon-bridge install "$CI_PROJECT_DIR"
+  # Allure 3 keeps history in one JSONL file outside the report, so caching
+  # it across pipelines is what gives a CI report a Trend and a Retries
+  # view instead of starting blank every time. The Allure 2 bridge could
+  # not do this at all in single-file mode.
+  cache:
+    key: "allure-history-$CI_JOB_NAME"
+    paths:
+      - allure-history.jsonl
+  artifacts:
+    when: always
+    paths:
+      - Reports/
+      # One self-contained .html per run: download it and double-click.
+      # No server, no "allure open", nothing to unpack first.
+      - allure-report/
+
+run_tests_linux:
+  extends: .katalon_linux
+  script:
+    # TODO: replace <YourCollection> with your actual Test Suite Collection
+    # path, or swap -testSuiteCollectionPath for
+    # -testSuitePath="Test Suites/<YourSuite>" to run a single suite.
+    #
+    # Add KATALON_API_KEY under Settings > CI/CD > Variables in your
+    # project (mask it): your Katalon Runtime Engine API key from Katalon
+    # Store > Profile > API Key.
+    - katalonc.sh -projectPath="$CI_PROJECT_DIR" -apiKey="$KATALON_API_KEY" -browserType="Chrome" -retry=0 -statusDelay=20 -executionProfile="default" --config -webui.autoUpdateDrivers=true -testSuiteCollectionPath="Test Suites/<YourCollection>" -reportFolder="$CI_PROJECT_DIR/Reports"
+
+# Windows and macOS on GitLab.com use hosted SaaS runners rather than the
+# Docker image above, so they select a runner by tag and drive katalonc
+# directly. Both are commented out because they need runners enabled on
+# your plan; uncomment the one you want.
+#
+# Katalon publishes katalonc for both platforms at
+# https://github.com/katalon-studio/katalon-studio/releases - download the
+# build matching the version you pin, then invoke it the same way the
+# Linux job invokes katalonc.sh.
+#
+# run_tests_windows:
+#   stage: test
+#   tags:
+#     - saas-windows-medium-amd64
+#   before_script:
+#     - npx allure3-katalon-bridge install "$CI_PROJECT_DIR"
+#   cache:
+#     key: "allure-history-$CI_JOB_NAME"
+#     paths:
+#       - allure-history.jsonl
+#   script:
+#     - .\katalonc.exe -projectPath="$CI_PROJECT_DIR" -apiKey="$KATALON_API_KEY" -browserType="Edge Chromium" -retry=0 -executionProfile="default" --config -webui.autoUpdateDrivers=true -testSuiteCollectionPath="Test Suites/<YourCollection>" -reportFolder="$CI_PROJECT_DIR\Reports"
+#   artifacts:
+#     when: always
+#     paths:
+#       - Reports/
+#       - allure-report/
+#
+# run_tests_macos:
+#   stage: test
+#   tags:
+#     - saas-macos-medium-m1
+#   image: macos-14-xcode-15
+#   before_script:
+#     - npx allure3-katalon-bridge install "$CI_PROJECT_DIR"
+#   cache:
+#     key: "allure-history-$CI_JOB_NAME"
+#     paths:
+#       - allure-history.jsonl
+#   script:
+#     - ./katalonc -projectPath="$CI_PROJECT_DIR" -apiKey="$KATALON_API_KEY" -browserType="Chrome" -retry=0 -executionProfile="default" --config -webui.autoUpdateDrivers=true -testSuiteCollectionPath="Test Suites/<YourCollection>" -reportFolder="$CI_PROJECT_DIR/Reports"
+#   artifacts:
+#     when: always
+#     paths:
+#       - Reports/
+#       - allure-report/
+
+# Optional, and new in Allure 3. Uncomment the qualityGate block in the
+# project's allurerc.mjs first; this then exits non-zero when a rule is
+# breached, failing the pipeline on a regression rather than only
+# reporting it. It reuses the exact CLI the installer already recorded, so
+# there is nothing extra to download here either.
+#
+# quality_gate:
+#   stage: test
+#   needs: ["run_tests_linux"]
+#   script:
+#     - export PATH="/opt/node-v${NODE_VERSION}-linux-x64/bin:$PATH"
+#     - NODE=$(node -p "require('./.allure3-bridge/cli.json').node")
+#     - CLI=$(node -p "require('./.allure3-bridge/cli.json').cli")
+#     - "$NODE" "$CLI" quality-gate ./allure-results -c allurerc.mjs
