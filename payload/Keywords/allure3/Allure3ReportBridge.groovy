@@ -70,6 +70,9 @@ class Allure3ReportBridge {
      */
     private static final Object INTRA_JVM_LOCK = new Object()
 
+    /** How much of the Allure CLI's output to hold for the failure message. */
+    private static final int PROCESS_OUTPUT_CAPTURE_LIMIT = 64 * 1024
+
     static void startSuite(TestSuiteContext testSuiteContext) {
         try {
             if (!Allure3Config.isEnabled()) {
@@ -347,17 +350,43 @@ class Allure3ReportBridge {
             .directory(new File(RunConfiguration.getProjectDir()))
             .redirectErrorStream(true)
             .start()
+
+        // Drain the merged output while the CLI is still running, not after
+        // it exits. The pipe between the two processes holds only a few tens
+        // of kilobytes; once it fills, the CLI blocks on its next write and
+        // never reaches exit, so waiting first and reading second would turn
+        // a chatty but perfectly healthy run into a spurious timeout.
+        // withReader also closes the stream, which reading only on the
+        // failure path did not.
+        StringBuffer output = new StringBuffer()
+        Thread drain = Thread.start {
+            try {
+                process.inputStream.withReader('UTF-8') { reader ->
+                    char[] buffer = new char[4096]
+                    int read
+                    while ((read = reader.read(buffer)) != -1) {
+                        // Keep reading past the cap so the pipe never fills,
+                        // but stop holding it all in memory.
+                        if (output.length() < PROCESS_OUTPUT_CAPTURE_LIMIT) {
+                            output.append(buffer, 0, read)
+                        }
+                    }
+                }
+            } catch (Throwable ignored) { }
+        }
+
         int timeout = Allure3Config.generateTimeoutSeconds()
         boolean finished = process.waitFor(timeout, TimeUnit.SECONDS)
 
         if (!finished) {
             process.destroyForcibly()
+            drain.join(2000)
             logger.logWarning("[Allure3] Report generation timed out after ${timeout}s - skipped.")
             return false
         }
+        drain.join(5000)
         if (process.exitValue() != 0) {
-            String output = process.inputStream.getText('UTF-8')
-            logger.logWarning("[Allure3] Report generation failed. Output: ${output.take(800)}")
+            logger.logWarning("[Allure3] Report generation failed. Output: ${output.toString().take(800)}")
             return false
         }
         return true
@@ -1604,12 +1633,22 @@ class Allure3ReportBridge {
      * execution0.log. Useful for troubleshooting a specific test case
      * whose steps didn't show up in a report.
      */
+    /** Diagnostics are a rolling window on the current problem, not an audit log. */
+    private static final long STEP_DIAG_MAX_BYTES = 1024L * 1024L
+
     private static void appendStepDiag(String text) {
-        if (!text) {
+        if (!text || !Allure3Config.stepDiagEnabled()) {
             return
         }
         try {
-            new File(RunConfiguration.getProjectDir(), 'allure3-step-diag.txt').append(text)
+            File file = new File(RunConfiguration.getProjectDir(), 'allure3-step-diag.txt')
+            // Start over rather than append without end: this file lives in
+            // the project root, where an ever-growing one would follow the
+            // project into git and CI artifacts.
+            if (file.length() > STEP_DIAG_MAX_BYTES) {
+                file.delete()
+            }
+            file.append(text)
         } catch (Throwable ignored) { }
     }
 

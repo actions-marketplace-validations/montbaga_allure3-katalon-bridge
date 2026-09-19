@@ -307,6 +307,22 @@ ${envEntries}
     return true;
 }
 
+/**
+ * Matches a classpathentry for one of our jars regardless of how the path
+ * is spelled.
+ *
+ * Katalon rewrites the relative paths this installer writes into absolute
+ * ones when it next opens the project, so a check for the exact relative
+ * string stops matching and a re-install registers the same jar a second
+ * time. Matching on the file name covers both spellings.
+ */
+function classpathEntryPattern(jarPath) {
+    const fileName = jarPath.split('/').pop().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Trailing whitespace is matched horizontally only: a greedy \s* would
+    // run past the line ending and swallow the next entry's indentation.
+    return new RegExp(`[^\\S\\r\\n]*<classpathentry[^>]*path="[^"]*${fileName}"[^>]*/>[^\\S\\r\\n]*\\r?\\n?`, 'g');
+}
+
 // Best-effort: only touches .classpath if the project already has one, and
 // only adds entries that aren't already there.
 function registerClasspathJars(projectPath) {
@@ -320,7 +336,7 @@ function registerClasspathJars(projectPath) {
     }
     let changed = false;
     for (const jarPath of JARS_TO_REGISTER) {
-        if (!xml.includes(`path="${jarPath}"`)) {
+        if (!classpathEntryPattern(jarPath).test(xml)) {
             xml = xml.replace('</classpath>', `\t<classpathentry kind="lib" path="${jarPath}"/>\n</classpath>`);
             changed = true;
         }
@@ -328,6 +344,26 @@ function registerClasspathJars(projectPath) {
     if (changed) {
         fs.writeFileSync(classpathFile, xml, 'utf8');
         console.log('  OK   .classpath (registered Drivers jars for the IDE editor)');
+    }
+}
+
+/**
+ * Removes the classpathentry lines install added, so uninstall does not
+ * leave the IDE pointing at jars that are no longer on disk.
+ */
+function unregisterClasspathJars(projectPath) {
+    const classpathFile = path.join(projectPath, '.classpath');
+    if (!fs.existsSync(classpathFile)) {
+        return;
+    }
+    let xml = fs.readFileSync(classpathFile, 'utf8');
+    const before = xml;
+    for (const jarPath of JARS_TO_REGISTER) {
+        xml = xml.replace(classpathEntryPattern(jarPath), '');
+    }
+    if (xml !== before) {
+        fs.writeFileSync(classpathFile, xml, 'utf8');
+        console.log('  REMOVED  .classpath entries for the Drivers jars');
     }
 }
 
@@ -359,6 +395,8 @@ function uninstall(projectPath, removeConfig) {
             console.log(`  REMOVED  ${relativePath}`);
         }
     }
+
+    unregisterClasspathJars(projectPath);
 
     for (const dir of CLEANUP_DIRS) {
         const fullDir = path.join(projectPath, dir);

@@ -35,7 +35,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $cliJs = Join-Path $repoRoot 'bin\cli.js'
 
-if (-not (Test-Path $cliJs)) {
+if (-not (Test-Path -LiteralPath $cliJs)) {
     throw "Could not find the bridge uninstaller at '$cliJs'. Run this script from inside a complete copy of the Allure3KatalonBridge package."
 }
 

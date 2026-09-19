@@ -46,7 +46,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $cliJs = Join-Path $repoRoot 'bin\cli.js'
 
-if (-not (Test-Path $cliJs)) {
+if (-not (Test-Path -LiteralPath $cliJs)) {
     throw "Could not find the bridge installer at '$cliJs'. Run this script from inside a complete copy of the Allure3KatalonBridge package."
 }
 
@@ -75,7 +75,7 @@ function Test-BundledCli {
         (Join-Path $repoRoot 'node_modules\allure\dist\cli.js')
     )
     foreach ($candidate in $candidates) {
-        if (Test-Path $candidate) { return $true }
+        if (Test-Path -LiteralPath $candidate) { return $true }
     }
     return $false
 }
@@ -87,7 +87,7 @@ if (-not (Test-BundledCli)) {
         throw "npm was not found on PATH, so the pinned Allure 3 CLI cannot be unpacked. Install Node.js (which includes npm) from https://nodejs.org/, or run 'npm install' in '$repoRoot' yourself, then run this again."
     }
 
-    Push-Location $repoRoot
+    Push-Location -LiteralPath $repoRoot
     try {
         & npm install --no-audit --no-fund
         $npmExit = $LASTEXITCODE

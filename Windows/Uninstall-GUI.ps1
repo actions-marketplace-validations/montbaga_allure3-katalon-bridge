@@ -37,7 +37,7 @@ if ($result -ne [System.Windows.Forms.DialogResult]::OK) {
 $projectPath = $dialog.SelectedPath
 
 $manifestPath = Join-Path $projectPath '.allure3-bridge\manifest.txt'
-if (-not (Test-Path $manifestPath)) {
+if (-not (Test-Path -LiteralPath $manifestPath)) {
     Show-Warning "No Allure3-Katalon Bridge installation found in:`n$projectPath`n`n(No .allure3-bridge\manifest.txt - it may not be installed there, or was installed by copying files manually instead of running the installer.)"
     exit 1
 }

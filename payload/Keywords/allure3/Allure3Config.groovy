@@ -181,6 +181,18 @@ class Allure3Config {
         return Boolean.parseBoolean(read('allure3.capture.steps', 'true'))
     }
 
+    /**
+     * Writes allure3-step-diag.txt in the project root, recording how each
+     * test case's step parsing went.
+     *
+     * Off by default. It appends on every run with no natural end, and is
+     * only worth reading when steps are missing from a report, so leaving
+     * it on just grows a file in the project root that nothing ever reads.
+     */
+    static boolean stepDiagEnabled() {
+        return Boolean.parseBoolean(read('allure3.step.diag.enabled', 'false'))
+    }
+
     /** Test-only hook so a single JVM run can pick up edited properties between tests. */
     static synchronized void reset() {
         fileProps = null

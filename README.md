@@ -357,6 +357,7 @@ variable so CI can redirect output without editing a checked-in file.
 | `allure3.separate.suites.as.parameters` | `true` | keeps cross-suite runs distinct |
 | `allure3.separate.browsers.as.parameters` | `true` | keeps per-browser history distinct |
 | `allure3.capture.steps` | `true` | Katalon log lines become nested Allure steps |
+| `allure3.step.diag.enabled` | `false` | write `allure3-step-diag.txt` while investigating missing steps |
 | `allure3.attach.screenshot.on.failure` | `true` | screenshot when a test does not pass |
 | `allure3.generate.timeout.seconds` | `120` | give up after this long |
 

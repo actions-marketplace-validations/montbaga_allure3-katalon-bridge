@@ -37,7 +37,7 @@ if ($result -ne [System.Windows.Forms.DialogResult]::OK) {
 
 $projectPath = $dialog.SelectedPath
 
-$prj = Get-ChildItem -Path $projectPath -Filter '*.prj' -File -ErrorAction SilentlyContinue | Select-Object -First 1
+$prj = Get-ChildItem -LiteralPath $projectPath -Filter '*.prj' -File -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $prj) {
     Show-Warning "No *.prj file found directly in:`n$projectPath`n`nThat doesn't look like a Katalon Studio project root. Pick the top-level project folder (the one Katalon Studio opens as a project) and try again."
     exit 1
