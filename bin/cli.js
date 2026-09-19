@@ -318,8 +318,8 @@ ${envEntries}
  */
 function classpathEntryPattern(jarPath) {
     const fileName = jarPath.split('/').pop().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Trailing whitespace is matched horizontally only: a greedy \s* would
-    // run past the line ending and swallow the next entry's indentation.
+    // Whitespace around the entry is matched horizontally only, so removing
+    // one line leaves the next line's own indentation intact.
     return new RegExp(`[^\\S\\r\\n]*<classpathentry[^>]*path="[^"]*${fileName}"[^>]*/>[^\\S\\r\\n]*\\r?\\n?`, 'g');
 }
 

@@ -354,10 +354,8 @@ class Allure3ReportBridge {
         // Drain the merged output while the CLI is still running, not after
         // it exits. The pipe between the two processes holds only a few tens
         // of kilobytes; once it fills, the CLI blocks on its next write and
-        // never reaches exit, so waiting first and reading second would turn
-        // a chatty but perfectly healthy run into a spurious timeout.
-        // withReader also closes the stream, which reading only on the
-        // failure path did not.
+        // never reaches exit, so waiting first and reading second turns a
+        // chatty but perfectly healthy run into a spurious timeout.
         StringBuffer output = new StringBuffer()
         Thread drain = Thread.start {
             try {
