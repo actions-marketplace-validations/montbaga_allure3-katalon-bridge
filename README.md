@@ -446,7 +446,8 @@ is breached. This has no Allure 2 equivalent.
   could not see a volta/nvm/homebrew `allure` is gone.
 - **Environments.** Browsers map to first-class Allure 3 environments
   rather than a `(Chrome)` suffix glued onto the suite name.
-- **Faster.** The same six-result run generates in about 140ms.
+- **Faster.** A small suite generates in well under a second, including
+  the single-file packaging.
 - **Charts.** Status dynamics and transitions, test base growth, duration
   histograms, stability distributions, testing pyramid.
 - **Quality gates**, known issues, `allure watch` for live reports, and

@@ -1,6 +1,6 @@
 {
   "name": "allure3-katalon-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zero-touch Allure 3 reporting for Katalon Studio projects - install with one command, no plugin, no OSGi packaging, no global Allure install.",
   "keywords": [
     "katalon",
@@ -33,7 +33,7 @@
     "VERSION"
   ],
   "dependencies": {
-    "allure": "^3.17.0"
+    "allure": "3.18.0"
   },
   "engines": {
     "node": ">=18"
