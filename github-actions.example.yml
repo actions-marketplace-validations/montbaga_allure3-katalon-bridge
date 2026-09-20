@@ -69,7 +69,43 @@ jobs:
         with:
           project-path: '${{ github.workspace }}'
 
+      # Linux only. Katalon Studio is an Eclipse application, so it needs a
+      # display even when the browser itself runs headless, and a hosted
+      # Linux runner has none.
+      #
+      # The readiness loop is not optional: backgrounding Xvfb and carrying
+      # on immediately leaves Katalon starting against a display that is not
+      # accepting connections yet, and the job hangs rather than failing
+      # with anything readable.
+      - name: Start Xvfb
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils
+          Xvfb :99 -screen 0 1920x1080x24 &
+          for i in $(seq 1 30); do
+            if xdpyinfo -display :99 >/dev/null 2>&1; then
+              echo "Xvfb is ready"
+              break
+            fi
+            sleep 1
+          done
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+
+      # Linux only. Katalon Studio 11.x's OSGi bundles require JavaSE 21,
+      # and the ubuntu runner does not default to it.
+      - name: Use JDK 21
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+
+      # continue-on-error: this exits non-zero on any non-passed test case,
+      # the same as a real test failure. That is a different question from
+      # whether reporting worked, so a failing test case must not stop the
+      # steps below from running.
       - name: Run Katalon tests
+        continue-on-error: true
         uses: katalon-studio/katalon-studio-github-action@v4.0
         with:
           version: '11.3.0'

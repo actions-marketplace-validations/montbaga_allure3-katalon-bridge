@@ -59,6 +59,49 @@ under the hood, and why the Allure 3 parts work the way they do.
 
 ![Failed test case, the screenshot captured on failure](demo/images/FailedTestCaseDetailed_3.jpg)
 
+## Verified in CI
+
+The same Test Suite Collection runs on Azure Pipelines hosted agents for
+Windows, macOS and Linux, producing one self-contained Allure 3 report per
+run as a downloadable artifact. Ready-to-copy configs for all three
+platforms are in [CI setup](#ci-setup) below.
+
+Linux needs two steps the other two do not, both included in the example
+config: Xvfb, because Katalon Studio is an Eclipse application and needs a
+display even when the browser runs headless, and JDK 21, because Katalon
+11.x's OSGi bundles require it and the Ubuntu image does not default to it.
+
+### Windows
+
+![Azure Pipelines run on a Windows agent](demo/images/windows_ci_ado.jpg)
+
+![Allure 3 report from the Windows run](demo/images/windows_ci_ado_allure3_report.jpg)
+
+![Artifacts published by the Windows run](demo/images/windows_ci_ado_artifacts.jpg)
+
+### macOS
+
+![Azure Pipelines run on a macOS agent](demo/images/macos_ci_ado.jpg)
+
+![Allure 3 report from the macOS run](demo/images/macos_ci_ado_allure3_reports.jpg)
+
+![Artifacts published by the macOS run](demo/images/macos_ci_ado_artifacts.jpg)
+
+### Linux
+
+![Azure Pipelines run on an Ubuntu agent](demo/images/ubunti_ci_ado.jpg)
+
+![Allure 3 report from the Ubuntu run](demo/images/ubunti_ci_allure3_report.jpg)
+
+![Artifacts published by the Ubuntu run](demo/images/ubunti_ci_artifacts.jpg)
+
+The report header picks up the build it came from with nothing configured:
+`executor.json` reads Azure Pipelines' own environment variables, so the
+run links straight back to the pipeline. The browser becomes a
+first-class Allure 3 environment, headless included, which is what keeps
+the same test case run against different browsers from collapsing into a
+single history entry.
+
 ## Sponsors
 
 <!-- Company logos go here as Priority Partner / Company sponsors join -->

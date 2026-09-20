@@ -78,6 +78,45 @@ steps:
   - script: npx allure3-katalon-bridge install "$(Build.SourcesDirectory)"
     displayName: 'Keep Allure3-Katalon Bridge up to date'
 
+  # Linux only. Katalon Studio is an Eclipse application, so it needs a
+  # display even when the browser itself runs headless, and a hosted Linux
+  # agent has none.
+  #
+  # The readiness loop is not optional: backgrounding Xvfb and carrying on
+  # immediately leaves Katalon starting against a display that is not
+  # accepting connections yet, and the job hangs rather than failing with
+  # anything readable.
+  - task: Bash@3
+    displayName: 'Start Xvfb (Linux)'
+    condition: eq(variables['Agent.OS'], 'Linux')
+    inputs:
+      targetType: 'inline'
+      script: |
+        set -e
+        sudo apt-get update
+        sudo apt-get install -y xvfb x11-utils
+        Xvfb :99 -screen 0 1920x1080x24 &
+        for i in $(seq 1 30); do
+          if xdpyinfo -display :99 >/dev/null 2>&1; then
+            echo "Xvfb is ready"
+            break
+          fi
+          sleep 1
+        done
+        echo "##vso[task.setvariable variable=DISPLAY]:99"
+
+  # Linux only. Katalon Studio 11.x's OSGi bundles require JavaSE 21, and
+  # the ubuntu-latest image does not default to it.
+  - task: Bash@3
+    displayName: 'Use JDK 21 (Linux)'
+    condition: eq(variables['Agent.OS'], 'Linux')
+    inputs:
+      targetType: 'inline'
+      script: |
+        set -e
+        echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_21_X64"
+        echo "##vso[task.prependpath]$JAVA_HOME_21_X64/bin"
+
   - task: PowerShell@2
     displayName: 'Clean bin/ before Katalon run'
     inputs:
@@ -95,6 +134,11 @@ steps:
   - task: katalonTask@1
     displayName: 'Run Katalon tests'
     condition: succeededOrFailed()
+    # Exits non-zero on any non-passed test case, the same as a real test
+    # failure. That is a different question from whether reporting worked,
+    # so a failing test case must not stop the steps below from running.
+    # The job is then flagged "succeeded with issues" rather than failed.
+    continueOnError: true
     inputs:
       version: '11.3.0'
       # TODO: replace <YourCollection> with your actual Test Suite
@@ -107,6 +151,16 @@ steps:
       # agent's auto-updating browser and fail with
       # SessionNotCreatedException.
       executeArgs: '-retry=0 -testSuiteCollectionPath="Test Suites/<YourCollection>" -executionProfile="default" -browserType="$(browserType)" -apiKey=$(KatalonApiKey) --config -webui.autoUpdateDrivers=true -reportFolder="$(Build.SourcesDirectory)$(reportSeparator)Reports"'
+
+  - task: Bash@3
+    displayName: 'Make sure the artifact folders exist'
+    condition: succeededOrFailed()
+    inputs:
+      targetType: 'inline'
+      script: |
+        # PublishBuildArtifacts errors on a missing path, which would bury
+        # the real reason a run failed under a second, unrelated failure.
+        mkdir -p "$(Build.SourcesDirectory)/Reports" "$(Build.SourcesDirectory)/allure-report"
 
   - task: PublishTestResults@2
     displayName: 'Publish test results'
