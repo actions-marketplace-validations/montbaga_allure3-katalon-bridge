@@ -436,25 +436,42 @@ qualityGate: {
 Then run `allure quality-gate` as a CI step; it exits non-zero when a rule
 is breached. This has no Allure 2 equivalent.
 
-## What you gain over the Allure 2 bridge
+## Compared with the Allure 2 bridge
 
-- **Trends in single-file reports.** Allure 2 embedded history inside the
-  report folder, so single-file mode could never carry it forward. Allure
-  3 keeps history in an external JSONL file, so it works in both modes.
-- **No PATH hunting.** The CLI is pinned and its exact path recorded at
-  install time. The failure mode where a GUI-launched Katalon Studio
-  could not see a volta/nvm/homebrew `allure` is gone.
-- **Environments.** Browsers map to first-class Allure 3 environments
-  rather than a `(Chrome)` suffix glued onto the suite name.
-- **Faster.** A small suite generates in well under a second, including
-  the single-file packaging.
-- **Charts.** Status dynamics and transitions, test base growth, duration
-  histograms, stability distributions, testing pyramid.
-- **Quality gates**, known issues, `allure watch` for live reports, and
-  the csv/dashboard/log/slack/testplan plugins, all through `allurerc.mjs`.
+This is the successor to
+[**allure-katalon-bridge**](https://github.com/montbaga/allure-katalon-bridge)
+([npm](https://www.npmjs.com/package/allure-katalon-bridge)), the same
+author's Allure 2 bridge for Katalon Studio. That one is still maintained
+and still the right choice if your team is standardised on Allure 2 or on
+an Allure 2 server such as Allure TestOps.
+
+| | [allure-katalon-bridge](https://github.com/montbaga/allure-katalon-bridge) | allure3-katalon-bridge |
+|---|---|---|
+| Allure version | 2.x | 3.x |
+| Getting the CLI | install it yourself, `npm i -g allure-commandline` | ships pinned in the package |
+| Finding the CLI | searched on PATH, with a fallback ladder | absolute path recorded at install, never searched |
+| GUI-launched IDE can't see `allure` | a real failure mode, needs `allure.commandline.path` | cannot happen |
+| Prerequisite | Java, plus the Allure commandline | Node.js 18+ |
+| Report | one self-contained `.html` | one self-contained `.html` |
+| Trend and Retries in single-file mode | not possible, history lived inside the report folder | works, history is an external JSONL file |
+| Browsers | a `(Chrome)` suffix glued onto the suite name | first-class environments, headless included |
+| Same test case across suites | kept apart by hashing `historyId` | kept apart by a `Suite` parameter, which is what Allure 3 actually reads |
+| Charts | Allure 2's set | adds testing pyramid, status transitions, test base growth, stability distributions |
+| Quality gates | none | `allure quality-gate`, fails the build on a regression |
+| Configuration | `allure.properties` | `allure3.properties` plus `allurerc.mjs` |
+| Keywords package | `allure` | `allure3` |
+
+The identity row is the one that matters most, and the reason this is not
+a drop-in swap. Allure 3 ignores the `historyId` the Allure 2 bridge works
+so hard to compute, and recomputes its own. See
+[Why Allure 3, and why this is not a drop-in swap](#why-allure-3-and-why-this-is-not-a-drop-in-swap)
+above for what that costs you if you simply point Allure 3 at Allure 2
+output.
 
 ## Migrating from allure-katalon-bridge
 
+Coming from
+[allure-katalon-bridge](https://github.com/montbaga/allure-katalon-bridge)?
 Nothing collides: the Groovy package is `allure3`, keywords live in
 `Keywords/allure3/`, the listener is `Allure3TestListener`, config is in
 `Include/config/allure3/`, and state files are `.allure3-*`. Both bridges
