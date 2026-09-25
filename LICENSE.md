@@ -197,3 +197,6 @@ This package redistributes two unmodified jars under their own licenses:
 - `allure-java-commons-2.35.4.jar` and `allure-model-2.35.4.jar` -
   © Qameta Software, licensed under the
   [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt).
+
+The 2.x version is deliberate. There is no `allure-java` 3.x, so the Java
+side writes Allure 2 results, which Allure 3 reads natively.
